@@ -1,11 +1,10 @@
 // Every field-name guess about Tavus's JSON shapes lives in this file and
-// nowhere else. The webhook event schema and the exact verbose=true
-// conversation shape are not fully documented, so extraction here is
-// deliberately defensive: try a short list of plausible key paths, return
-// null if none match, never throw. Once real payloads have been captured
-// (they're preserved in full in events.raw / conversations.raw regardless
-// of whether extraction succeeds), update the candidate paths below against
-// what was actually observed.
+// nowhere else. The exact verbose=true conversation shape is not fully
+// documented, so extraction here is deliberately defensive: try a short
+// list of plausible key paths, return null if none match, never throw.
+// Once real payloads have been captured (they're preserved in full in
+// conversations.raw regardless of whether extraction succeeds), update the
+// candidate paths below against what was actually observed.
 
 type JsonObject = Record<string, unknown>;
 
@@ -59,37 +58,6 @@ function firstTimestamp(obj: unknown, paths: string[][]): string | null {
     if (typeof val === "number") return new Date(val * 1000).toISOString();
   }
   return null;
-}
-
-// CONFIRMED against real synced conversations: conversation_id is a
-// top-level field on every event Tavus delivers to callback_url —
-// system.pal_joined, system.shutdown, application.transcription_ready,
-// application.recording_ready, application.recording_copy_failed,
-// application.perception_analysis, application.post_call_action_executed
-// (the full callback event list per Tavus's Webhooks and Callbacks docs,
-// checked 2026-08-12). The nested candidates below are kept as a defensive
-// fallback only.
-export function extractConversationId(body: unknown): string | null {
-  return firstString(body, [
-    ["conversation_id"],
-    ["conversation", "conversation_id"],
-    ["data", "conversation_id"],
-    ["properties", "conversation_id"],
-  ]);
-}
-
-// CONFIRMED: "event_type" is the discriminator, with dotted values like
-// "application.transcription_ready", "application.perception_analysis",
-// "application.perception_unavailable", "system.replica_joined",
-// "system.shutdown" (seen in real payloads reaching this endpoint, or
-// Tavus's docs). Kept the other candidates as fallback only.
-export function extractEventType(body: unknown): string | null {
-  return firstString(body, [
-    ["event_type"],
-    ["type"],
-    ["event"],
-    ["message_type"],
-  ]);
 }
 
 export interface ConversationDetailFields {

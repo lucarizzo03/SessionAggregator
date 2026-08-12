@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getConversationWithEvents } from "@/lib/queries";
+import { getConversation } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +11,9 @@ export async function GET(
   // resolved asynchronously so the framework can start rendering before
   // routing is fully settled).
   const { id } = await params;
-  const result = await getConversationWithEvents(id);
-  if (!result) {
+  const conversation = await getConversation(id);
+  if (!conversation) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
-  return NextResponse.json(result);
+  return NextResponse.json(conversation);
 }

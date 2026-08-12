@@ -3,28 +3,23 @@
 > Third-party tool for Tavus conversational-AI sessions. Not built,
 > maintained, or endorsed by Tavus.
 
-Pulls conversation data from Tavus, scores each session against what its
-persona was supposed to accomplish, and shows the results in one place —
-a sessions list, a per-session detail view, and an aggregate view.
+Pulls conversation data from Tavus after a call ends, scores it against
+what its persona was supposed to accomplish, and shows the results in one
+place — a sessions list, a per-session detail view, and an aggregate view.
+This is an after-the-call tool: nothing is captured live, there's no
+webhook — everything comes from asking Tavus for a call's record once it's
+over.
 
 ## How it works
 
 - **Sync** — pulls ended conversations: transcript, status, end-of-call
   analysis.
-- **Webhook** — receives live call events, if this app's deployed URL was
-  set as the callback target when the conversation was created.
 - **Extract** — one Claude pass per session, scoring the transcript
   against its persona's objectives and guardrails. **LLM-judged, not
   ground truth** — see below.
 - **Aggregate** — objective completion (worst-first), guardrail checks
   (held / violated / never tested), turn latency, and a sessions list
   filterable by clicking any objective or guardrail.
-
-**Nothing is captured live right now.** Every conversation in this app
-so far came from Sync, pulling the full record of an already-*ended*
-call. `callback_url` has never actually been set on a real call, so the
-webhook has never fired — it's built and correct, but currently unused.
-Until that changes, this is an after-the-call tool, not a real-time one.
 
 ## Stack
 
@@ -50,7 +45,6 @@ npm run dev
 | `GET /sessions/[id]` | Transcript, end-of-call perception analysis, raw payload |
 | `GET /aggregate` | Objective/guardrail results, turn latency, filterable sessions list |
 | `POST /api/sync` | Pull ended conversations |
-| `POST /api/webhook` | Receive live callback events |
 | `POST /api/extract` | Score unscored conversations (`?force=true` re-runs all) |
 | `GET /api/conversations`, `/api/conversations/[id]`, `/api/metrics` | REST surface behind the pages above |
 
@@ -65,12 +59,6 @@ npm run dev
    Vercel doesn't run migrations for you.
 4. Set `TAVUS_API_KEY` and `ANTHROPIC_API_KEY` manually — neither comes
    from an integration.
-5. Once deployed, set `callback_url` to `https://<your-domain>/api/webhook`
-   when creating a conversation, live *before* the call starts. Covers 7
-   events: `system.pal_joined`, `system.shutdown`,
-   `application.transcription_ready`, `application.recording_ready`,
-   `application.recording_copy_failed`, `application.perception_analysis`,
-   `application.post_call_action_executed`.
 
 ## Scoring is LLM-judged, not ground truth
 

@@ -1,13 +1,10 @@
 import { sql } from "./db";
 
-// duration and event_count were dropped from the sessions list: Tavus's
-// API returns no duration field on any pulled conversation (confirmed
-// against the raw payload, not just this app's extraction — see
-// PLAN.md), and event_count is always 0 since no live call has ever had
-// callback_url set, so both columns only ever rendered "—"/"0" for every
-// row. They're still real columns on `conversations`/`events` (see
-// ConversationRow, getConversationWithEvents) — just not worth a column
-// in this list until either has real data behind it.
+// duration was dropped from the sessions list: Tavus's API returns no
+// duration field on any pulled conversation (confirmed against the raw
+// payload, not just this app's extraction — see PLAN.md). It's still a
+// real column on `conversations` (see ConversationRow) — just not worth a
+// column in this list until it has real data behind it.
 export interface ConversationListRow {
   conversation_id: string;
   status: string | null;
@@ -38,26 +35,9 @@ export interface ConversationRow {
   fetched_at: string;
 }
 
-export interface EventRow {
-  id: number;
-  conversation_id: string | null;
-  event_type: string | null;
-  raw: unknown;
-  received_at: string;
-}
-
-export async function getConversationWithEvents(
-  id: string,
-): Promise<{ conversation: ConversationRow; events: EventRow[] } | null> {
+export async function getConversation(id: string): Promise<ConversationRow | null> {
   const rows = await sql`
     select * from conversations where conversation_id = ${id}
   `;
-  const conversation = rows[0] as ConversationRow | undefined;
-  if (!conversation) return null;
-
-  const events = (await sql`
-    select * from events where conversation_id = ${id} order by received_at asc
-  `) as EventRow[];
-
-  return { conversation, events };
+  return (rows[0] as ConversationRow | undefined) ?? null;
 }

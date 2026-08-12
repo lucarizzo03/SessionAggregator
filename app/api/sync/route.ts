@@ -4,12 +4,14 @@ import { extractConversationDetail } from "@/lib/tavus";
 
 const TAVUS_BASE_URL = "https://tavusapi.com";
 
-// Pull side. Unlike the webhook, this endpoint is safe to do real work in:
-// it's operator-triggered (the Sync button), idempotent (upsert on
-// conversation_id), and re-runnable if it fails partway — nothing is lost by
-// retrying since the source of truth (Tavus) can still be queried after the
-// fact, which is exactly the property a live-pushed webhook event doesn't
-// have.
+// Pull side — the only side that actually exists now (the webhook receiver
+// was removed, see PLAN.md: every event it would have delivered live also
+// gets replayed inside this pull response's own events array, and
+// callback_url was never actually set on a real call anyway). Safe to do
+// real work in: operator-triggered (the Sync button), idempotent (upsert on
+// conversation_id), and re-runnable if it fails partway — nothing is lost
+// by retrying since the source of truth (Tavus) can still be queried after
+// the fact.
 export async function POST() {
   const apiKey = process.env.TAVUS_API_KEY;
   if (!apiKey) {

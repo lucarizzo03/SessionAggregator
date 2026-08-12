@@ -1,12 +1,10 @@
 // Inserts two fake conversations (with transcripts shaped per the field
-// guesses in lib/tavus.ts) plus a few fake webhook events, so the UI can be
-// exercised before any real calls have run. Real sessions will land through
-// the same path as everything else (webhook pushes + /api/sync pulls) once
-// calls against the live app start pointing their callback_url here — this
-// script is purely for viewing the UI in the meantime. Uses tagged-template
-// sql calls (one literal per insert) rather than sql.query(), since every
-// statement here is static and parameterized — the template form is the
-// safer default and is what the app code uses elsewhere.
+// guesses in lib/tavus.ts), so the UI can be exercised before any real
+// calls have run. Real sessions land via /api/sync — this script is purely
+// for viewing the UI in the meantime. Uses tagged-template sql calls (one
+// literal per insert) rather than sql.query(), since every statement here
+// is static and parameterized — the template form is the safer default and
+// is what the app code uses elsewhere.
 require("dotenv").config({ path: ".env.local" });
 require("dotenv").config();
 
@@ -102,21 +100,7 @@ async function main() {
       fetched_at = excluded.fetched_at
   `;
 
-  const fakeEvents = [
-    { conversation_id: "seed-conversation-1", event_type: "utterance", raw: { conversation_id: "seed-conversation-1", event_type: "utterance", role: "agent", content: transcriptA[0].content } },
-    { conversation_id: "seed-conversation-1", event_type: "utterance", raw: { conversation_id: "seed-conversation-1", event_type: "utterance", role: "user", content: transcriptA[1].content } },
-    { conversation_id: "seed-conversation-1", event_type: "conversation.ended", raw: { conversation_id: "seed-conversation-1", event_type: "conversation.ended" } },
-    { conversation_id: "seed-conversation-2", event_type: "utterance", raw: { conversation_id: "seed-conversation-2", event_type: "utterance", role: "agent", content: transcriptB[0].content } },
-  ];
-
-  for (const e of fakeEvents) {
-    await sql`
-      insert into events (conversation_id, event_type, raw)
-      values (${e.conversation_id}, ${e.event_type}, ${JSON.stringify(e.raw)}::jsonb)
-    `;
-  }
-
-  console.log("Seeded 2 conversations and 4 events.");
+  console.log("Seeded 2 conversations.");
 }
 
 main().catch((err) => {

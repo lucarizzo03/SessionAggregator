@@ -156,21 +156,3 @@
   font-size: 12px;
 }
 
-.eventsTableWrap {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  background: var(--surface);
-}
-
-.eventRaw {
-  max-width: 480px;
-  overflow-x: auto;
-}
-
-.eventRaw pre {
-  border: none;
-  padding: 0;
-  background: transparent;
-  font-size: 12px;
-}

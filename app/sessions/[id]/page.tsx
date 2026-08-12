@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getConversationWithEvents } from "@/lib/queries";
+import { getConversation } from "@/lib/queries";
 import { normalizeTranscript } from "@/lib/tavus";
 import styles from "./page.module.css";
 
 // See app/page.tsx for why this is needed: without it, Next would try to
 // statically prerender this route at build time instead of reading fresh
-// data (and a new conversation's events would 404 forever, since a static
-// build could only ever have prerendered ids that existed at build time).
+// data (and a new conversation would 404 forever, since a static build
+// could only ever have prerendered ids that existed at build time).
 export const dynamic = "force-dynamic";
 
 // Dynamic route params arrive as a Promise in this Next.js version.
@@ -17,9 +17,8 @@ export default async function SessionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getConversationWithEvents(id);
-  if (!result) notFound();
-  const { conversation, events } = result;
+  const conversation = await getConversation(id);
+  if (!conversation) notFound();
 
   const turns = normalizeTranscript(conversation.transcript);
 
@@ -69,46 +68,13 @@ export default async function SessionDetailPage({
         ))}
       </section>
 
-      {/* These two panels exist for schema discovery, not as a planned
-          feature: since the transcript/perception field names above are
-          guesses (lib/tavus.ts), being able to see exactly what Tavus sent
-          is how those guesses get corrected once real calls run. */}
+      {/* Exists for schema discovery, not as a planned feature: since the
+          transcript/perception field names above are guesses (lib/tavus.ts),
+          being able to see exactly what Tavus sent is how those guesses get
+          corrected once real calls run. */}
       <details className={styles.rawSection}>
         <summary>Raw conversation payload ({`/api/sync` } response, as stored)</summary>
         <pre className={styles.prose}>{JSON.stringify(conversation.raw, null, 2)}</pre>
-      </details>
-
-      <details className={styles.rawSection}>
-        <summary>Raw events ({events.length})</summary>
-        <div className={styles.eventsTableWrap}>
-          <table>
-            <thead>
-              <tr>
-                <th>Received</th>
-                <th>Type</th>
-                <th>Raw</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((e) => (
-                <tr key={e.id}>
-                  <td className={styles.mono}>{new Date(e.received_at).toISOString()}</td>
-                  <td>{e.event_type ?? "—"}</td>
-                  <td className={styles.eventRaw}>
-                    <pre>{JSON.stringify(e.raw, null, 2)}</pre>
-                  </td>
-                </tr>
-              ))}
-              {events.length === 0 && (
-                <tr>
-                  <td colSpan={3} className={styles.empty}>
-                    No events received for this conversation.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </details>
     </div>
   );
