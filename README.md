@@ -20,6 +20,12 @@ a sessions list, a per-session detail view, and an aggregate view.
   (held / violated / never tested), turn latency, and a sessions list
   filterable by clicking any objective or guardrail.
 
+**Nothing is captured live right now.** Every conversation in this app
+so far came from Sync, pulling the full record of an already-*ended*
+call. `callback_url` has never actually been set on a real call, so the
+webhook has never fired — it's built and correct, but currently unused.
+Until that changes, this is an after-the-call tool, not a real-time one.
+
 ## Stack
 
 Next.js (App Router) + Neon Postgres + plain CSS. No ORM, no component
