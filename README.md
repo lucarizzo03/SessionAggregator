@@ -108,8 +108,11 @@ npm run dev
   synced conversations from the real Tavus API, storing its objectives and
   guardrails. Re-runnable; run this before `/api/extract` the first time,
   since extraction scores against whatever's in the `personas` table.
-- `npm run seed` — inserts fake conversations + events, so the UI has
-  something to show before any real calls have run.
+- `npm run seed` — inserts fake conversations + events, so the sessions
+  list and detail view have something to show before any real calls have
+  run. Predates personas/extraction: seeded conversations have no
+  `persona_id` and won't work with Extract or `/aggregate` — seed only
+  covers Phase 1 (sessions list/detail), not Phase 2.
 
 ## Objective/guardrail scoring is LLM-judged, not ground truth
 
