@@ -42,6 +42,25 @@ function firstDefined(obj: unknown, paths: string[][]): unknown {
   return null;
 }
 
+// CONFIRMED against two real conversations (2026-08-11 and 2026-08-12):
+// transcript[].timestamp is not consistently typed. One call's transcript
+// had it as an ISO 8601 string ("2026-08-11T23:02:15.957838Z"); another
+// had it as a Unix epoch float ("1786505572.3161497", seconds since
+// epoch) — same field, same application.transcription_ready event type,
+// genuinely inconsistent across payloads rather than a guess. A plain
+// firstString here would silently return null for every turn on the
+// number-typed payloads, which is exactly what happened before this was
+// caught: every timestamp rendered as "—" for a conversation whose
+// transcript used the numeric form.
+function firstTimestamp(obj: unknown, paths: string[][]): string | null {
+  for (const path of paths) {
+    const val = get(obj, path);
+    if (typeof val === "string" && val.length > 0) return val;
+    if (typeof val === "number") return new Date(val * 1000).toISOString();
+  }
+  return null;
+}
+
 // CONFIRMED per Tavus's Utterance Event docs: conversation_id is a
 // top-level field on the conversation.utterance push payload (alongside
 // event_type, timestamp, seq, inference_id, turn_idx), not nested under any
@@ -191,7 +210,7 @@ export function normalizeTranscript(transcript: unknown): NormalizedTurn[] {
   return transcript.map((turn) => ({
     role: firstString(turn, [["role"], ["speaker"], ["participant"]]),
     text: firstString(turn, [["content"], ["text"], ["transcript"]]),
-    timestamp: firstString(turn, [["timestamp"], ["start_time"], ["time"]]),
+    timestamp: firstTimestamp(turn, [["timestamp"], ["start_time"], ["time"]]),
     inferenceId: firstString(turn, [["inference_id"]]),
   }));
 }
