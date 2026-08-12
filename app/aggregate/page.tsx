@@ -133,7 +133,8 @@ export default async function AggregatePage({
             <h2>Guardrails</h2>
             <div className={styles.listWrap}>
               {sortedGuardrails.map((g) => {
-                const neverTested = g.heldCount === 0 && g.violatedCount === 0;
+                const totalChecks = g.heldCount + g.violatedCount;
+                const neverTested = totalChecks === 0;
                 const hasViolation = g.violatedCount > 0;
                 const dotClass = neverTested
                   ? styles.dotMuted
@@ -151,9 +152,12 @@ export default async function AggregatePage({
                     href={`/aggregate?guardrail=${encodeURIComponent(g.name)}`}
                     className={styles.row}
                   >
-                    <div className={styles.dotRow}>
-                      <span className={`${styles.dot} ${dotClass}`} />
-                      <span className={styles.rowName}>{g.name}</span>
+                    <div className={styles.rowTop}>
+                      <div className={styles.dotRow}>
+                        <span className={`${styles.dot} ${dotClass}`} />
+                        <span className={styles.rowName}>{g.name}</span>
+                      </div>
+                      <span className={styles.rowStat}>{neverTested ? "—" : totalChecks}</span>
                     </div>
                     <div className={styles.rowDetail}>{detail}</div>
                   </Link>
