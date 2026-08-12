@@ -18,15 +18,13 @@ export default function Loading() {
             <tr>
               <th>Conversation ID</th>
               <th>Status</th>
-              <th>Duration</th>
-              <th>Events</th>
               <th>Perception</th>
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: 6 }).map((_, i) => (
               <tr key={i}>
-                {Array.from({ length: 5 }).map((__, j) => (
+                {Array.from({ length: 3 }).map((__, j) => (
                   <td key={j}>
                     <div className={styles.skeletonCell} />
                   </td>

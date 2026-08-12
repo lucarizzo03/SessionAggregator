@@ -22,10 +22,6 @@ export function SessionRow({ conversation }: { conversation: ConversationListRow
           <span className={styles.muted}>—</span>
         )}
       </td>
-      <td className={styles.mono}>
-        {conversation.duration != null ? `${conversation.duration}s` : <span className={styles.muted}>—</span>}
-      </td>
-      <td className={styles.mono}>{conversation.event_count}</td>
       <td>
         {conversation.has_perception ? (
           <span className={styles.perceptionYes}>Yes</span>

@@ -32,8 +32,6 @@ export default async function SessionsPage() {
             <tr>
               <th>Conversation ID</th>
               <th>Status</th>
-              <th>Duration</th>
-              <th>Events</th>
               <th>Perception</th>
             </tr>
           </thead>
@@ -43,7 +41,7 @@ export default async function SessionsPage() {
             ))}
             {conversations.length === 0 && (
               <tr>
-                <td colSpan={5} className={styles.empty}>
+                <td colSpan={3} className={styles.empty}>
                   No sessions yet. Run a sync, or seed the database to preview the UI.
                 </td>
               </tr>

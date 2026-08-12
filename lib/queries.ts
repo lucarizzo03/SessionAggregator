@@ -1,27 +1,29 @@
 import { sql } from "./db";
 
+// duration and event_count were dropped from the sessions list: Tavus's
+// API returns no duration field on any pulled conversation (confirmed
+// against the raw payload, not just this app's extraction — see
+// PLAN.md), and event_count is always 0 since no live call has ever had
+// callback_url set, so both columns only ever rendered "—"/"0" for every
+// row. They're still real columns on `conversations`/`events` (see
+// ConversationRow, getConversationWithEvents) — just not worth a column
+// in this list until either has real data behind it.
 export interface ConversationListRow {
   conversation_id: string;
   status: string | null;
-  duration: number | null;
   fetched_at: string;
   has_perception: boolean;
-  event_count: number;
 }
 
 export async function getConversations(): Promise<ConversationListRow[]> {
   const rows = await sql`
     select
-      c.conversation_id,
-      c.status,
-      c.duration,
-      c.fetched_at,
-      (c.perception_analysis is not null) as has_perception,
-      coalesce(count(e.id), 0)::int as event_count
-    from conversations c
-    left join events e on e.conversation_id = c.conversation_id
-    group by c.conversation_id, c.status, c.duration, c.fetched_at, c.perception_analysis
-    order by c.fetched_at desc
+      conversation_id,
+      status,
+      fetched_at,
+      (perception_analysis is not null) as has_perception
+    from conversations
+    order by fetched_at desc
   `;
   return rows as ConversationListRow[];
 }
