@@ -1,5 +1,8 @@
 # Tavus Session Aggregator
 
+> Third-party tool built for use with [Tavus](https://www.tavus.io/)
+> conversational-AI sessions. Not built, maintained, or endorsed by Tavus.
+
 Captures Tavus conversational-AI session data, then scores it against what
 the persona was actually supposed to accomplish.
 
