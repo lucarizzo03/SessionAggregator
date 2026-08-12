@@ -4,10 +4,15 @@
 //
 // The neon() HTTP driver's tagged-template function only takes a literal
 // template, not an arbitrary string, so a multi-statement file can't be
-// passed straight through as `sql\`${fileContents}\``. Instead we split on
-// ";" and run each statement through sql.query(), the driver's escape hatch
-// for query text that isn't a template literal. That's safe here because
-// this migration file has no semicolons inside string literals or comments.
+// passed straight through as `sql\`${fileContents}\``. Instead we strip
+// "--" line comments and split what's left on ";", running each statement
+// through sql.query(), the driver's escape hatch for query text that isn't
+// a template literal. Comments have to be stripped first, not just skipped
+// during the split: a semicolon inside a comment (e.g. "...documented;
+// perception_analysis is...") previously fooled the naive split into
+// treating the comment's tail as a new statement, so this now removes
+// comment text before splitting rather than trusting comments to stay
+// semicolon-free.
 require("dotenv").config({ path: ".env.local" });
 require("dotenv").config();
 
@@ -31,7 +36,15 @@ async function main() {
   for (const file of files) {
     console.log(`Running ${file}...`);
     const contents = fs.readFileSync(path.join(migrationsDir, file), "utf8");
-    const statements = contents
+    // Drop everything from "--" to end of line before splitting, so
+    // punctuation inside comments (like this file's prose) can't be
+    // mistaken for a statement boundary. Safe here since the migration
+    // files have no string literals containing "--".
+    const withoutComments = contents
+      .split("\n")
+      .map((line) => line.replace(/--.*$/, ""))
+      .join("\n");
+    const statements = withoutComments
       .split(";")
       .map((s) => s.trim())
       .filter((s) => s.length > 0);

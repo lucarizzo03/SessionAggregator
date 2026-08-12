@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "migrate": "node scripts/migrate.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "backfill-personas": "node scripts/backfill-personas.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getConversationWithEvents } from "@/lib/queries";
-import { normalizeTranscript } from "@/lib/tavus";
+import { normalizeTranscript, extractUtteranceAnalysis } from "@/lib/tavus";
 import styles from "./page.module.css";
 
 // See app/page.tsx for why this is needed: without it, Next would try to
@@ -21,11 +21,14 @@ export default async function SessionDetailPage({
   if (!result) notFound();
   const { conversation, events } = result;
 
-  // Reads conversation.transcript (jsonb from the pull side) and produces
-  // one row per turn with role/text/timestamp plus the per-turn visual and
-  // audio perception prose, when present — see lib/tavus.ts for exactly
-  // which field names are tried and why they're guesses.
+  // Transcript turns come from the pull side (conversation.transcript);
+  // per-utterance visual/audio analysis comes from the push side (events
+  // pushed live to the webhook during the call) and only exists for user
+  // turns using the Raven-1 persona — see lib/tavus.ts. The two are joined
+  // by inference_id, the one field that appears on both a pulled transcript
+  // entry and its corresponding pushed conversation.utterance event.
   const turns = normalizeTranscript(conversation.transcript);
+  const utteranceAnalysis = extractUtteranceAnalysis(events);
 
   return (
     <div className={styles.container}>
@@ -85,17 +88,23 @@ export default async function SessionDetailPage({
         <div className={styles.column}>
           <h2>Per-utterance analysis</h2>
           {turns.length === 0 && <p className={styles.empty}>No per-utterance analysis available.</p>}
-          {turns.map((t, i) => (
-            <div key={i} className={styles.turn}>
-              <div className={styles.turnMeta}>
-                <span className={styles.mono}>{t.timestamp ?? "—"}</span>
+          {/* Only ever populated for user turns on a Raven-1 persona, and
+              only if the webhook was live (deployed, callback_url pointed
+              here) during this specific call — see lib/tavus.ts. */}
+          {turns.map((t, i) => {
+            const analysis = t.inferenceId ? utteranceAnalysis.get(t.inferenceId) : undefined;
+            return (
+              <div key={i} className={styles.turn}>
+                <div className={styles.turnMeta}>
+                  <span className={styles.mono}>{t.timestamp ?? "—"}</span>
+                </div>
+                <p className={styles.label}>Visual</p>
+                <pre className={styles.prose}>{analysis?.visual ?? "—"}</pre>
+                <p className={styles.label}>Audio</p>
+                <pre className={styles.prose}>{analysis?.audio ?? "—"}</pre>
               </div>
-              <p className={styles.label}>Visual</p>
-              <pre className={styles.prose}>{t.visual ?? "—"}</pre>
-              <p className={styles.label}>Audio</p>
-              <pre className={styles.prose}>{t.audio ?? "—"}</pre>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

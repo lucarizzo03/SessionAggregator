@@ -57,9 +57,17 @@ export async function POST() {
     const detail = await detailRes.json();
     const fields = extractConversationDetail(detail);
 
+    if (!fields.personaId) {
+      // Don't silently write null — a conversation with neither persona_id
+      // nor pal_id is either a genuinely persona-less conversation type or
+      // a payload shape not yet seen. Worth seeing in logs rather than
+      // discovering later as a quietly-unscored gap in the aggregate view.
+      console.warn(`[sync] conversation ${id} has no persona_id or pal_id`);
+    }
+
     await sql`
       insert into conversations
-        (conversation_id, status, duration, perception_analysis, transcript, raw, fetched_at)
+        (conversation_id, status, duration, perception_analysis, transcript, raw, persona_id, fetched_at)
       values (
         ${id},
         ${fields.status},
@@ -67,6 +75,7 @@ export async function POST() {
         ${fields.perceptionAnalysis},
         ${JSON.stringify(fields.transcript)}::jsonb,
         ${JSON.stringify(detail)}::jsonb,
+        ${fields.personaId},
         now()
       )
       on conflict (conversation_id) do update set
@@ -75,6 +84,7 @@ export async function POST() {
         perception_analysis = excluded.perception_analysis,
         transcript = excluded.transcript,
         raw = excluded.raw,
+        persona_id = excluded.persona_id,
         fetched_at = excluded.fetched_at
     `;
     synced++;
