@@ -75,9 +75,3 @@ bugs already found this way: a declined answer scored as "completed"
 looked identical to one that was never tested at all (fixed by tracking
 outcomes, not just violations). Spot-check numbers against the actual
 transcript, linked from every session row.
-
-## Open question
-
-No live call has ever had `callback_url` set, so the webhook path is
-built and correct but untested against a real payload. Once one lands in
-`events`, check it against `lib/tavus.ts`.
