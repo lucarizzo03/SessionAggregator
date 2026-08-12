@@ -92,55 +92,73 @@ export default async function AggregatePage({
           <section className={styles.section}>
             <h2>Objective completion</h2>
             <div className={styles.listWrap}>
-              {sortedObjectives.map((o) => (
-                <Link
-                  key={o.name}
-                  href={`/aggregate?objective=${encodeURIComponent(o.name)}`}
-                  className={styles.row}
-                >
-                  <div className={styles.rowTop}>
-                    <span className={styles.rowName}>{o.name}</span>
-                    <span className={styles.rowCounts}>
-                      {o.completed}/{o.total} completed ({Math.round(o.completionRate * 100)}%)
+              {sortedObjectives.map((o) => {
+                const completedPct = o.total > 0 ? (o.completed / o.total) * 100 : 0;
+                const declinedPct = o.total > 0 ? (o.declined / o.total) * 100 : 0;
+                return (
+                  <Link
+                    key={o.name}
+                    href={`/aggregate?objective=${encodeURIComponent(o.name)}`}
+                    className={styles.row}
+                  >
+                    <div className={styles.rowTop}>
+                      <span className={styles.rowName}>{o.name}</span>
+                      <span className={styles.rowStat}>
+                        {Math.round(o.completionRate * 100)}%
+                      </span>
+                    </div>
+                    <div className={styles.barTrack}>
+                      <div
+                        className={styles.barSegmentCompleted}
+                        style={{ width: `${completedPct}%` }}
+                      />
+                      <div
+                        className={styles.barSegmentDeclined}
+                        style={{ width: `${declinedPct}%` }}
+                      />
+                    </div>
+                    <div className={styles.rowDetail}>
+                      {o.completed} completed
                       {o.declined > 0 && ` · ${o.declined} declined`}
-                    </span>
-                  </div>
-                  <div className={styles.barTrack}>
-                    <div
-                      className={styles.barFill}
-                      style={{ width: `${o.completionRate * 100}%` }}
-                    />
-                  </div>
-                </Link>
-              ))}
+                      {o.notCompleted > 0 && ` · ${o.notCompleted} not completed`}
+                      {` of ${o.total}`}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
           <section className={styles.section}>
             <h2>Guardrails</h2>
             <div className={styles.listWrap}>
-              {sortedGuardrails.map((g) => (
-                <Link
-                  key={g.name}
-                  href={`/aggregate?guardrail=${encodeURIComponent(g.name)}`}
-                  className={styles.row}
-                >
-                  <div className={styles.guardrailRow}>
-                    <span className={styles.rowName}>{g.name}</span>
-                    {g.heldCount === 0 && g.violatedCount === 0 ? (
-                      <span className={styles.badgeInfo}>Never tested</span>
-                    ) : g.violatedCount > 0 ? (
-                      <span className={styles.badgeError}>
-                        {g.violatedCount} violated · {g.heldCount} held
-                      </span>
-                    ) : (
-                      <span className={styles.badgeSuccess}>
-                        Held {g.heldCount} time{g.heldCount === 1 ? "" : "s"}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              ))}
+              {sortedGuardrails.map((g) => {
+                const neverTested = g.heldCount === 0 && g.violatedCount === 0;
+                const hasViolation = g.violatedCount > 0;
+                const dotClass = neverTested
+                  ? styles.dotMuted
+                  : hasViolation
+                    ? styles.dotError
+                    : styles.dotSuccess;
+                const detail = neverTested
+                  ? "Never tested"
+                  : hasViolation
+                    ? `${g.violatedCount} violated · ${g.heldCount} held`
+                    : `Held ${g.heldCount} time${g.heldCount === 1 ? "" : "s"}`;
+                return (
+                  <Link
+                    key={g.name}
+                    href={`/aggregate?guardrail=${encodeURIComponent(g.name)}`}
+                    className={styles.row}
+                  >
+                    <div className={styles.dotRow}>
+                      <span className={`${styles.dot} ${dotClass}`} />
+                      <span className={styles.rowName}>{g.name}</span>
+                    </div>
+                    <div className={styles.rowDetail}>{detail}</div>
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
@@ -164,23 +182,35 @@ export default async function AggregatePage({
               {filteredSessions.length === 0 && (
                 <p className={styles.empty}>No sessions match this filter.</p>
               )}
-              {filteredSessions.map((s) => (
-                <Link
-                  key={s.conversationId}
-                  href={`/sessions/${s.conversationId}`}
-                  className={styles.row}
-                >
-                  <div className={styles.rowTop}>
-                    <span className={`${styles.rowName} ${styles.mono}`}>
-                      {s.conversationId}
-                    </span>
-                    <span className={styles.rowCounts}>
-                      {s.personaName ?? "unknown persona"}
-                      {s.dropOffTurn != null && ` · dropped off at turn ${s.dropOffTurn}`}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+              {filteredSessions.map((s) => {
+                const hasViolation = s.guardrailChecks.some((g) => g.outcome === "violated");
+                const hasIncomplete = s.objectives.some((o) => o.status === "not_completed");
+                const dotClass = hasViolation
+                  ? styles.dotError
+                  : hasIncomplete
+                    ? styles.dotWarning
+                    : styles.dotSuccess;
+                return (
+                  <Link
+                    key={s.conversationId}
+                    href={`/sessions/${s.conversationId}`}
+                    className={styles.row}
+                  >
+                    <div className={styles.rowTop}>
+                      <div className={styles.dotRow}>
+                        <span className={`${styles.dot} ${dotClass}`} />
+                        <span className={`${styles.rowName} ${styles.mono}`}>
+                          {s.conversationId}
+                        </span>
+                      </div>
+                      <span className={styles.rowCounts}>{s.personaName ?? "unknown persona"}</span>
+                    </div>
+                    {s.dropOffTurn != null && (
+                      <div className={styles.rowDetail}>Dropped off at turn {s.dropOffTurn}</div>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           </section>
         </>
