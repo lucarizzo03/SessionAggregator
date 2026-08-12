@@ -201,6 +201,50 @@ a.row:hover {
   background: var(--error);
 }
 
+/* Guardrail rows are <details>, not <Link> — clicking one expands its
+   matching sessions in place, no navigation, no scroll jump. The negative
+   margin + matching padding trick lets the hover highlight reach the same
+   edges as .row's own padding without having to fork .row into a
+   zero-padding variant just for this one case. */
+.guardrailSummary {
+  display: block;
+  cursor: pointer;
+  list-style: none;
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-lg));
+  padding: var(--space-md) var(--space-lg);
+}
+
+.guardrailSummary::-webkit-details-marker {
+  display: none;
+}
+
+.guardrailSummary:hover {
+  background: var(--bg);
+}
+
+.guardrailSessions {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.guardrailSessionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-size: 13px;
+  color: inherit;
+  padding: var(--space-2xs) 0;
+}
+
+.guardrailSessionRow:hover {
+  color: var(--accent);
+}
+
 .filterBanner {
   display: flex;
   align-items: center;

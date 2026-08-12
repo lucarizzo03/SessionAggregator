@@ -8,17 +8,19 @@ import styles from "./page.module.css";
 // snapshot.
 export const dynamic = "force-dynamic";
 
-// Query params drive the "click an objective/guardrail to filter the
-// sessions list" interaction (see PLAN.md Step 4) entirely server-side —
-// no client state needed, consistent with the rest of the app being
-// Server Components. Only one filter applies at a time: each Link below
-// sets exactly one param, so clicking a new one always replaces the other.
+// Objective filtering still drives the sessions list below via a query
+// param ("click the worst objective, see who failed it") — that's a real
+// navigation to a genuinely different view, so a page reload is fine.
+// Guardrails are different: clicking one is a "tell me more about this
+// specific row" action, not a navigation to a new view, so it's a <details>
+// that expands in place below (see the Guardrails section) — no URL change,
+// no scroll jump, nothing server-rendered has to happen for it.
 export default async function AggregatePage({
   searchParams,
 }: {
-  searchParams: Promise<{ objective?: string; guardrail?: string }>;
+  searchParams: Promise<{ objective?: string }>;
 }) {
-  const { objective, guardrail } = await searchParams;
+  const { objective } = await searchParams;
   const metrics = await getAllMetrics();
 
   const sortedObjectives = [...metrics.objectives].sort(
@@ -28,19 +30,11 @@ export default async function AggregatePage({
     (a, b) => b.violatedCount - a.violatedCount || b.heldCount - a.heldCount,
   );
 
-  // Guardrail filter shows every session that actually checked it (held OR
-  // violated), not just violations — a guardrail that's held every time
-  // would otherwise filter to an empty list, which reads as "nothing ever
-  // tested this" when the opposite is true. Each matching row shows its
-  // own outcome below (see filteredGuardrailOutcome), so "which sessions
-  // hit this guardrail and what happened" is fully answered inline.
   const filteredSessions = objective
     ? metrics.sessions.filter((s) =>
         s.objectives.some((o) => o.name === objective && o.status !== "completed"),
       )
-    : guardrail
-      ? metrics.sessions.filter((s) => s.guardrailChecks.some((g) => g.name === guardrail))
-      : metrics.sessions;
+    : metrics.sessions;
 
   const noExtractionsYet = metrics.sessions.length === 0;
 
@@ -146,21 +140,72 @@ export default async function AggregatePage({
                   : hasViolation
                     ? `${g.violatedCount} violated · ${g.heldCount} held`
                     : `Held ${g.heldCount} time${g.heldCount === 1 ? "" : "s"}`;
-                return (
-                  <Link
-                    key={g.name}
-                    href={`/aggregate?guardrail=${encodeURIComponent(g.name)}`}
-                    className={styles.row}
-                  >
-                    <div className={styles.rowTop}>
-                      <div className={styles.dotRow}>
-                        <span className={`${styles.dot} ${dotClass}`} />
-                        <span className={styles.rowName}>{g.name}</span>
-                      </div>
-                      <span className={styles.rowStat}>{neverTested ? "—" : totalChecks}</span>
+
+                const summary = (
+                  <div className={styles.rowTop}>
+                    <div className={styles.dotRow}>
+                      <span className={`${styles.dot} ${dotClass}`} />
+                      <span className={styles.rowName}>{g.name}</span>
                     </div>
-                    <div className={styles.rowDetail}>{detail}</div>
-                  </Link>
+                    <span className={styles.rowStat}>{neverTested ? "—" : totalChecks}</span>
+                  </div>
+                );
+
+                // Never-tested guardrails have nothing to expand into, so
+                // they're a plain row, not a <details> — no point offering
+                // to expand an empty list.
+                if (neverTested) {
+                  return (
+                    <div key={g.name} className={styles.row}>
+                      {summary}
+                      <div className={styles.rowDetail}>{detail}</div>
+                    </div>
+                  );
+                }
+
+                // Which sessions actually hit this guardrail, with each
+                // one's own outcome — computed here rather than via a page
+                // navigation, so expanding a row never moves the scroll
+                // position (the whole point of switching this off the
+                // query-param/Link pattern the objective rows still use).
+                const matchingSessions = metrics.sessions
+                  .map((s) => ({
+                    session: s,
+                    check: s.guardrailChecks.find((c) => c.name === g.name),
+                  }))
+                  .filter(
+                    (m): m is { session: (typeof metrics.sessions)[number]; check: NonNullable<typeof m.check> } =>
+                      m.check !== undefined,
+                  );
+
+                return (
+                  <details key={g.name} className={styles.row}>
+                    <summary className={styles.guardrailSummary}>
+                      {summary}
+                      <div className={styles.rowDetail}>{detail}</div>
+                    </summary>
+                    <div className={styles.guardrailSessions}>
+                      {matchingSessions.map(({ session, check }) => (
+                        <Link
+                          key={session.conversationId}
+                          href={`/sessions/${session.conversationId}`}
+                          className={styles.guardrailSessionRow}
+                        >
+                          <span className={styles.mono}>{session.conversationId}</span>
+                          <span
+                            className={
+                              check.outcome === "violated"
+                                ? styles.outcomeViolated
+                                : styles.outcomeHeld
+                            }
+                          >
+                            {check.outcome === "violated" ? "Violated" : "Held"} at turn{" "}
+                            {check.turn_idx}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </details>
                 );
               })}
             </div>
@@ -168,17 +213,11 @@ export default async function AggregatePage({
 
           <section className={styles.section}>
             <h2>Sessions</h2>
-            {(objective || guardrail) && (
+            {objective && (
               <div className={styles.filterBanner}>
-                {objective ? (
-                  <span>
-                    Showing sessions where <strong>{objective}</strong> was not completed
-                  </span>
-                ) : (
-                  <span>
-                    Showing sessions where <strong>{guardrail}</strong> was tested
-                  </span>
-                )}
+                <span>
+                  Showing sessions where <strong>{objective}</strong> was not completed
+                </span>
                 <Link href="/aggregate">Clear filter</Link>
               </div>
             )}
@@ -194,11 +233,6 @@ export default async function AggregatePage({
                   : hasIncomplete
                     ? styles.dotWarning
                     : styles.dotSuccess;
-                // Only set when a guardrail filter is active — the specific
-                // outcome that made this session match the filter.
-                const guardrailCheck = guardrail
-                  ? s.guardrailChecks.find((g) => g.name === guardrail)
-                  : undefined;
                 return (
                   <Link
                     key={s.conversationId}
@@ -214,20 +248,6 @@ export default async function AggregatePage({
                       </div>
                       <span className={styles.rowCounts}>{s.personaName ?? "unknown persona"}</span>
                     </div>
-                    {guardrailCheck && (
-                      <div className={styles.rowDetail}>
-                        <span
-                          className={
-                            guardrailCheck.outcome === "violated"
-                              ? styles.outcomeViolated
-                              : styles.outcomeHeld
-                          }
-                        >
-                          {guardrailCheck.outcome === "violated" ? "Violated" : "Held"}
-                        </span>{" "}
-                        at turn {guardrailCheck.turn_idx}
-                      </div>
-                    )}
                     {s.dropOffTurn != null && (
                       <div className={styles.rowDetail}>Dropped off at turn {s.dropOffTurn}</div>
                     )}
