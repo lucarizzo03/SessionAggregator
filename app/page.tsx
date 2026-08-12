@@ -22,7 +22,7 @@ export default async function SessionsPage() {
       <div className={styles.header}>
         <div className={styles.headerText}>
           <h1>Sessions</h1>
-          <p>Live webhook events and pulled transcripts from Tavus.</p>
+          <p>Live webhook events and pulled conversation transcripts.</p>
         </div>
         <SyncButton />
       </div>

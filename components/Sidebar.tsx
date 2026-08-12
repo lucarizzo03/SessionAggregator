@@ -16,7 +16,6 @@ export function Sidebar() {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
-        <span className={styles.eyebrow}>Tavus</span>
         <span className={styles.name}>Session Aggregator</span>
       </div>
       <nav className={styles.nav}>

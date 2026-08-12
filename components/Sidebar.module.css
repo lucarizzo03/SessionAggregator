@@ -16,16 +16,6 @@
   margin-bottom: var(--space-xl);
 }
 
-.eyebrow {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: var(--space-2xs);
-}
-
 .name {
   display: block;
   font-family: var(--font-display);
