@@ -61,13 +61,17 @@ function firstTimestamp(obj: unknown, paths: string[][]): string | null {
   return null;
 }
 
-// CONFIRMED per Tavus's Utterance Event docs: conversation_id is a
-// top-level field on the conversation.utterance push payload (alongside
-// event_type, timestamp, seq, inference_id, turn_idx), not nested under any
-// envelope. The nested candidates below are kept as fallback only in case a
-// different event_type wraps it differently — not yet observed directly
-// (no live webhook has hit this endpoint yet since it's only been run
-// against localhost, not a deployed callback_url).
+// CONFIRMED against real synced conversations: conversation_id is a
+// top-level field on every event Tavus actually delivers to callback_url —
+// system.pal_joined, system.shutdown, application.transcription_ready,
+// application.recording_ready, application.recording_copy_failed,
+// application.perception_analysis, application.post_call_action_executed
+// (the full callback event list per Tavus's Webhooks and Callbacks docs,
+// checked 2026-08-12). The nested candidates below are kept as a defensive
+// fallback only. conversation.utterance also has conversation_id top-level
+// per its own schema doc, but that event is delivered over Daily's WebRTC
+// data channel, not callback_url — it will never actually reach this
+// function through this endpoint, see extractUtteranceAnalysis below.
 export function extractConversationId(body: unknown): string | null {
   return firstString(body, [
     ["conversation_id"],
@@ -78,10 +82,14 @@ export function extractConversationId(body: unknown): string | null {
 }
 
 // CONFIRMED: "event_type" is the discriminator, with dotted values like
-// "conversation.utterance" (live push), "application.transcription_ready",
-// "application.perception_analysis", "application.perception_unavailable",
-// "system.replica_joined", "system.shutdown" (seen in real payloads or
-// Tavus's docs). Kept the other candidates as fallback only.
+// "application.transcription_ready", "application.perception_analysis",
+// "application.perception_unavailable", "system.replica_joined",
+// "system.shutdown" (seen in real payloads reaching this endpoint, or
+// Tavus's docs). "conversation.utterance" is dotted the same way but is
+// delivered over Daily's WebRTC data channel (app-message), not POSTed to
+// callback_url — it will never actually arrive here; kept as a schema
+// reference only, see extractUtteranceAnalysis below. Kept the other
+// candidates as fallback only.
 export function extractEventType(body: unknown): string | null {
   return firstString(body, [
     ["event_type"],
@@ -91,26 +99,41 @@ export function extractEventType(body: unknown): string | null {
   ]);
 }
 
-// CONFIRMED per docs: conversation.utterance's full shape is
+// CORRECTED FINDING (2026-08-12): this used to say "CONFIRMED per docs" and
+// frame the webhook needing to be live during the call as the reason this
+// data has no pull-side fallback. That was wrong about the mechanism —
+// checked against Tavus's actual Interaction Events docs, conversation.utterance
+// is delivered over Daily's WebRTC data channel ("app-message"), the same
+// real-time protocol used for tool calls and start/stop-speaking events —
+// it is never POSTed to callback_url the way application.transcription_ready
+// and application.perception_analysis are. /api/webhook only ever receives
+// what's POSTed to callback_url, so this function returns an empty map for
+// every conversation under this app's current architecture, regardless of
+// whether the webhook was deployed, reachable, or live during the call.
+// Actually receiving this data would require a separate integration that
+// joins the Daily room as a participant and listens for app-message events
+// in real time — out of scope for now. Function, types, and the schema
+// below are kept in place purely to document the finding, not because
+// they're expected to ever populate.
+//
+// conversation.utterance's documented shape (schema reference only — this
+// app has no path that ever receives it):
 //   { message_type: "conversation", event_type: "conversation.utterance",
 //     timestamp, seq, conversation_id, inference_id, turn_idx,
 //     properties: { speech, role, user_audio_analysis?, user_visual_analysis? } }
-// properties.user_audio_analysis / user_visual_analysis are optional: Tavus
-// only sends them for user turns (never "pal"/"replica" turns), only when
-// the persona uses the Raven-1 perception model, and only when non-empty.
-// This is the data the brief's "per-utterance visual and audio analysis"
-// column refers to — and it's genuinely push-only: the aggregated
-// transcript returned by the pull side (application.transcription_ready,
-// see extractConversationDetail) does not carry these fields, only
-// role/content/timestamp/inference_id. That's the concrete reason the
-// webhook has to be live during the call — this specific data has no pull
-// fallback. inference_id is the join key back to transcript turns, since
-// it appears on both the push event and each pulled transcript entry.
+// properties.user_audio_analysis / user_visual_analysis are documented as
+// optional: Tavus only sends them for user turns (never "pal"/"replica"
+// turns), only when the persona uses the Raven-1 perception model, and only
+// when non-empty. inference_id is the join key back to transcript turns
+// pulled via application.transcription_ready, since it appears on both this
+// (unreachable) event and each pulled transcript entry.
 export interface UtteranceAnalysis {
   visual: string | null;
   audio: string | null;
 }
 
+// Always returns an empty map under this app's current architecture — see
+// the comment above. An empty result is expected, not an error condition.
 export function extractUtteranceAnalysis(events: { event_type: string | null; raw: unknown }[]): Map<string, UtteranceAnalysis> {
   const map = new Map<string, UtteranceAnalysis>();
   for (const event of events) {
@@ -203,8 +226,9 @@ export interface NormalizedTurn {
 // role/content/timestamp/inference_id field names CONFIRMED against a real
 // application.transcription_ready payload. Visual/audio are deliberately
 // not extracted here: they don't live on the pulled transcript entries at
-// all (see extractUtteranceAnalysis above) — only inference_id does, which
-// callers use to join against events pushed during the live call.
+// all (see extractUtteranceAnalysis above) — only inference_id does, kept
+// as the documented join key to conversation.utterance events, which this
+// app has no path to actually receive (see extractUtteranceAnalysis).
 export function normalizeTranscript(transcript: unknown): NormalizedTurn[] {
   if (!Array.isArray(transcript)) return [];
   return transcript.map((turn) => ({
