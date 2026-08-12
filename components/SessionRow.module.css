@@ -1,0 +1,16 @@
+.row {
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--surface);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.muted {
+  color: var(--muted);
+}

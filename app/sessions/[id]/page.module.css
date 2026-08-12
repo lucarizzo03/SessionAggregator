@@ -1,0 +1,165 @@
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.back {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.title {
+  margin-top: 8px;
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  word-break: break-all;
+}
+
+.meta {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.metaValue {
+  font-size: 14px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.perception {
+  margin-bottom: 32px;
+}
+
+.perception h2 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.prose {
+  font-family: var(--font-sans);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 760px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column h2 {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.turn {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.turn:last-child {
+  border-bottom: none;
+}
+
+.turnMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.turnMeta strong {
+  color: var(--fg);
+  text-transform: capitalize;
+}
+
+.label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 10px 0 4px;
+}
+
+.label:first-of-type {
+  margin-top: 0;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.rawSection {
+  margin-top: 40px;
+}
+
+.rawSection summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.rawSection pre {
+  max-height: 480px;
+  overflow: auto;
+  font-size: 12px;
+}
+
+.eventsTableWrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.eventRaw {
+  max-width: 480px;
+  overflow-x: auto;
+}
+
+.eventRaw pre {
+  border: none;
+  padding: 0;
+  background: transparent;
+  font-size: 12px;
+}
