@@ -24,14 +24,22 @@ export default async function AggregatePage({
   const sortedObjectives = [...metrics.objectives].sort(
     (a, b) => a.completionRate - b.completionRate,
   );
-  const sortedGuardrails = [...metrics.guardrails].sort((a, b) => b.fireCount - a.fireCount);
+  const sortedGuardrails = [...metrics.guardrails].sort(
+    (a, b) => b.violatedCount - a.violatedCount || b.heldCount - a.heldCount,
+  );
 
+  // Filtering by guardrail shows violated sessions specifically, not every
+  // session where it was checked — mirrors the objective filter's "show me
+  // the problem sessions" intent rather than "show me everywhere this was
+  // relevant."
   const filteredSessions = objective
     ? metrics.sessions.filter((s) =>
         s.objectives.some((o) => o.name === objective && o.status !== "completed"),
       )
     : guardrail
-      ? metrics.sessions.filter((s) => s.guardrailFires.some((g) => g.name === guardrail))
+      ? metrics.sessions.filter((s) =>
+          s.guardrailChecks.some((g) => g.name === guardrail && g.outcome === "violated"),
+        )
       : metrics.sessions;
 
   const noExtractionsYet = metrics.sessions.length === 0;
@@ -41,7 +49,7 @@ export default async function AggregatePage({
       <div className={styles.header}>
         <div className={styles.headerText}>
           <h1>Aggregate</h1>
-          <p>Objective completion, guardrail fires, and turn latency across every scored session.</p>
+          <p>Objective completion, guardrail checks, and turn latency across every scored session.</p>
         </div>
         <ExtractButton />
       </div>
@@ -119,11 +127,15 @@ export default async function AggregatePage({
                 >
                   <div className={styles.guardrailRow}>
                     <span className={styles.rowName}>{g.name}</span>
-                    {g.fireCount === 0 ? (
-                      <span className={styles.badgeInfo}>Never fired</span>
+                    {g.heldCount === 0 && g.violatedCount === 0 ? (
+                      <span className={styles.badgeInfo}>Never tested</span>
+                    ) : g.violatedCount > 0 ? (
+                      <span className={styles.badgeError}>
+                        {g.violatedCount} violated · {g.heldCount} held
+                      </span>
                     ) : (
-                      <span className={styles.mono}>
-                        {g.fireCount} fire{g.fireCount === 1 ? "" : "s"}
+                      <span className={styles.badgeSuccess}>
+                        Held {g.heldCount} time{g.heldCount === 1 ? "" : "s"}
                       </span>
                     )}
                   </div>
@@ -142,7 +154,7 @@ export default async function AggregatePage({
                   </span>
                 ) : (
                   <span>
-                    Showing sessions where <strong>{guardrail}</strong> fired
+                    Showing sessions where <strong>{guardrail}</strong> was violated
                   </span>
                 )}
                 <Link href="/aggregate">Clear filter</Link>

@@ -98,11 +98,11 @@ export async function POST(req: NextRequest) {
 
     await sql`
       insert into extractions
-        (conversation_id, objectives, guardrail_fires, drop_off_turn, model, raw_response, extracted_at)
+        (conversation_id, objectives, guardrail_checks, drop_off_turn, model, raw_response, extracted_at)
       values (
         ${row.conversation_id},
         ${parsed ? JSON.stringify(parsed.objectives) : null}::jsonb,
-        ${parsed ? JSON.stringify(parsed.guardrailFires) : null}::jsonb,
+        ${parsed ? JSON.stringify(parsed.guardrailChecks) : null}::jsonb,
         ${parsed ? parsed.dropOffTurn : null},
         ${EXTRACTION_MODEL},
         ${rawResponse},
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       )
       on conflict (conversation_id) do update set
         objectives = excluded.objectives,
-        guardrail_fires = excluded.guardrail_fires,
+        guardrail_checks = excluded.guardrail_checks,
         drop_off_turn = excluded.drop_off_turn,
         model = excluded.model,
         raw_response = excluded.raw_response,

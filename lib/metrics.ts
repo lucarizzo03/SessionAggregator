@@ -48,35 +48,42 @@ export async function getObjectiveCompletionStats(): Promise<ObjectiveStat[]> {
 export interface GuardrailStat {
   personaId: string;
   name: string;
-  fireCount: number;
+  heldCount: number;
+  violatedCount: number;
 }
 
-// Guardrail fire counts, including guardrails that have NEVER fired.
-// Unlike objectives, extractions.guardrail_fires only lists guardrails that
-// actually fired (the extraction prompt says so explicitly) — a guardrail
-// with zero fires never appears in any extraction row at all, so the only
-// way to know it exists and report its count as 0 is to start from the
-// persona's full guardrail list and left-join fire counts onto it, not the
-// other way around.
+// Guardrail check counts, including guardrails that have NEVER been
+// pressure-tested. Unlike objectives, extractions.guardrail_checks only
+// lists guardrails that were actually tested (the extraction prompt says
+// so explicitly) — a guardrail with zero checks never appears in any
+// extraction row at all, so the only way to know it exists and report 0/0
+// is to start from the persona's full guardrail list and left-join check
+// counts onto it, not the other way around. Held and violated are counted
+// separately (not just a total) since a guardrail that's been tested 5
+// times and held all 5 is a very different signal from one violated even
+// once.
 export async function getGuardrailFireStats(): Promise<GuardrailStat[]> {
   const personaRows = (await sql`
     select persona_id, guardrails from personas
   `) as { persona_id: string; guardrails: unknown }[];
 
-  const fireRows = (await sql`
-    select c.persona_id, e.guardrail_fires
+  const checkRows = (await sql`
+    select c.persona_id, e.guardrail_checks
     from extractions e
     join conversations c on c.conversation_id = e.conversation_id
-    where e.guardrail_fires is not null and c.persona_id is not null
-  `) as { persona_id: string; guardrail_fires: unknown }[];
+    where e.guardrail_checks is not null and c.persona_id is not null
+  `) as { persona_id: string; guardrail_checks: unknown }[];
 
-  const fireCounts = new Map<string, number>();
-  for (const row of fireRows) {
-    const fires = row.guardrail_fires as { name: string }[] | null;
-    if (!Array.isArray(fires)) continue;
-    for (const f of fires) {
-      const key = `${row.persona_id}::${f.name}`;
-      fireCounts.set(key, (fireCounts.get(key) ?? 0) + 1);
+  const counts = new Map<string, { held: number; violated: number }>();
+  for (const row of checkRows) {
+    const checks = row.guardrail_checks as { name: string; outcome: string }[] | null;
+    if (!Array.isArray(checks)) continue;
+    for (const c of checks) {
+      const key = `${row.persona_id}::${c.name}`;
+      const entry = counts.get(key) ?? { held: 0, violated: 0 };
+      if (c.outcome === "violated") entry.violated++;
+      else entry.held++;
+      counts.set(key, entry);
     }
   }
 
@@ -86,10 +93,12 @@ export async function getGuardrailFireStats(): Promise<GuardrailStat[]> {
     if (!Array.isArray(guardrails)) continue;
     for (const g of guardrails) {
       const key = `${persona.persona_id}::${g.guardrail_name}`;
+      const entry = counts.get(key) ?? { held: 0, violated: 0 };
       stats.push({
         personaId: persona.persona_id,
         name: g.guardrail_name,
-        fireCount: fireCounts.get(key) ?? 0,
+        heldCount: entry.held,
+        violatedCount: entry.violated,
       });
     }
   }
@@ -209,7 +218,7 @@ export interface ScoredSession {
   status: string | null;
   personaName: string | null;
   objectives: { name: string; status: string; turn_idx: number | null }[];
-  guardrailFires: { name: string; turn_idx: number }[];
+  guardrailChecks: { name: string; outcome: string; turn_idx: number }[];
   dropOffTurn: number | null;
 }
 
@@ -224,7 +233,7 @@ export async function getScoredSessions(): Promise<ScoredSession[]> {
       c.status,
       p.name as persona_name,
       e.objectives,
-      e.guardrail_fires,
+      e.guardrail_checks,
       e.drop_off_turn
     from extractions e
     join conversations c on c.conversation_id = e.conversation_id
@@ -235,7 +244,7 @@ export async function getScoredSessions(): Promise<ScoredSession[]> {
     status: string | null;
     persona_name: string | null;
     objectives: unknown;
-    guardrail_fires: unknown;
+    guardrail_checks: unknown;
     drop_off_turn: number | null;
   }[];
 
@@ -244,7 +253,7 @@ export async function getScoredSessions(): Promise<ScoredSession[]> {
     status: r.status,
     personaName: r.persona_name,
     objectives: (r.objectives as ScoredSession["objectives"] | null) ?? [],
-    guardrailFires: (r.guardrail_fires as ScoredSession["guardrailFires"] | null) ?? [],
+    guardrailChecks: (r.guardrail_checks as ScoredSession["guardrailChecks"] | null) ?? [],
     dropOffTurn: r.drop_off_turn,
   }));
 }

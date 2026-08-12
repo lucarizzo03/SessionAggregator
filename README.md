@@ -25,7 +25,7 @@ and an aggregate view across every scored session.
   the transcript against its persona's objectives and guardrails —
   **LLM-judged, not ground truth.** See below.
 - **`/aggregate`** surfaces the results: objective completion sorted
-  worst-first, guardrail fire counts (flagging any that have never fired),
+  worst-first, guardrail checks broken out as held/violated/never tested,
   turn latency, and a sessions list you can filter by clicking any
   objective or guardrail.
 
@@ -52,7 +52,7 @@ npm run dev
 |---|---|
 | `GET /` | Sessions list |
 | `GET /sessions/[id]` | Transcript, end-of-call perception analysis, raw payload/event inspection |
-| `GET /aggregate` | Objective completion, guardrail fires, turn latency, filterable sessions list |
+| `GET /aggregate` | Objective completion, guardrail held/violated checks, turn latency, filterable sessions list |
 | `POST /api/sync` | Pull ended conversations from Tavus |
 | `POST /api/webhook` | Receive live callback events (Tavus → this app) |
 | `POST /api/extract` | Score conversations without an extraction yet; `?force=true` to re-run all |
@@ -114,18 +114,28 @@ npm run dev
 ## Objective/guardrail scoring is LLM-judged, not ground truth
 
 Everything under **Extract** and `/aggregate` — whether an objective was
-completed, declined, or missed; whether a guardrail fired — is Claude's
-read on the transcript, not a verified fact. It will sometimes be wrong.
+completed, declined, or missed; whether a guardrail was tested, held, or
+violated — is Claude's read on the transcript, not a verified fact. It
+will sometimes be wrong.
 
-This was a real, not hypothetical, finding: an early version of the
-extraction prompt scored a patient's explicit "I don't want to answer" as
-a *completed* objective, because the topic had been raised and closed off
-even though no information was actually gathered. That specific failure
-mode is fixed (objective status is three-way — completed / declined /
-not_completed — precisely because of this), but the fix doesn't make the
-scoring ground truth, only more accurate. Treat every number on
-`/aggregate` as a model's interpretation worth spot-checking against the
-actual transcript (linked from every session row), not as measured fact.
+Two real, not hypothetical, findings so far:
+
+- An early version of the extraction prompt scored a patient's explicit
+  "I don't want to answer" as a *completed* objective, because the topic
+  had been raised and closed off even though no information was actually
+  gathered. Fixed by making objective status three-way — completed /
+  declined / not_completed.
+- Guardrail tracking originally only recorded violations, so a guardrail
+  that was directly pressure-tested and successfully held (a patient
+  asking "could you give me a diagnosis?" and the persona correctly
+  refusing) looked identical to a guardrail that was never relevant to the
+  call at all — both showed up as nothing. Fixed by recording every
+  guardrail check with an outcome (held/violated), not just violations.
+
+Both fixes make the scoring more accurate, not ground truth. Treat every
+number on `/aggregate` as a model's interpretation worth spot-checking
+against the actual transcript (linked from every session row), not as
+measured fact.
 
 ## What's confirmed vs. still a guess
 

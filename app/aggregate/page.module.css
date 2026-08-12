@@ -149,6 +149,20 @@ a.row:hover {
   background: transparent;
 }
 
+.badgeError {
+  composes: badge;
+  color: var(--error);
+  border-color: var(--error);
+  background: transparent;
+}
+
+.badgeSuccess {
+  composes: badge;
+  color: var(--success);
+  border-color: var(--success);
+  background: transparent;
+}
+
 .filterBanner {
   display: flex;
   align-items: center;
