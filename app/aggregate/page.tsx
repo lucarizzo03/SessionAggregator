@@ -28,18 +28,18 @@ export default async function AggregatePage({
     (a, b) => b.violatedCount - a.violatedCount || b.heldCount - a.heldCount,
   );
 
-  // Filtering by guardrail shows violated sessions specifically, not every
-  // session where it was checked — mirrors the objective filter's "show me
-  // the problem sessions" intent rather than "show me everywhere this was
-  // relevant."
+  // Guardrail filter shows every session that actually checked it (held OR
+  // violated), not just violations — a guardrail that's held every time
+  // would otherwise filter to an empty list, which reads as "nothing ever
+  // tested this" when the opposite is true. Each matching row shows its
+  // own outcome below (see filteredGuardrailOutcome), so "which sessions
+  // hit this guardrail and what happened" is fully answered inline.
   const filteredSessions = objective
     ? metrics.sessions.filter((s) =>
         s.objectives.some((o) => o.name === objective && o.status !== "completed"),
       )
     : guardrail
-      ? metrics.sessions.filter((s) =>
-          s.guardrailChecks.some((g) => g.name === guardrail && g.outcome === "violated"),
-        )
+      ? metrics.sessions.filter((s) => s.guardrailChecks.some((g) => g.name === guardrail))
       : metrics.sessions;
 
   const noExtractionsYet = metrics.sessions.length === 0;
@@ -176,7 +176,7 @@ export default async function AggregatePage({
                   </span>
                 ) : (
                   <span>
-                    Showing sessions where <strong>{guardrail}</strong> was violated
+                    Showing sessions where <strong>{guardrail}</strong> was tested
                   </span>
                 )}
                 <Link href="/aggregate">Clear filter</Link>
@@ -194,6 +194,11 @@ export default async function AggregatePage({
                   : hasIncomplete
                     ? styles.dotWarning
                     : styles.dotSuccess;
+                // Only set when a guardrail filter is active — the specific
+                // outcome that made this session match the filter.
+                const guardrailCheck = guardrail
+                  ? s.guardrailChecks.find((g) => g.name === guardrail)
+                  : undefined;
                 return (
                   <Link
                     key={s.conversationId}
@@ -209,6 +214,20 @@ export default async function AggregatePage({
                       </div>
                       <span className={styles.rowCounts}>{s.personaName ?? "unknown persona"}</span>
                     </div>
+                    {guardrailCheck && (
+                      <div className={styles.rowDetail}>
+                        <span
+                          className={
+                            guardrailCheck.outcome === "violated"
+                              ? styles.outcomeViolated
+                              : styles.outcomeHeld
+                          }
+                        >
+                          {guardrailCheck.outcome === "violated" ? "Violated" : "Held"}
+                        </span>{" "}
+                        at turn {guardrailCheck.turn_idx}
+                      </div>
+                    )}
                     {s.dropOffTurn != null && (
                       <div className={styles.rowDetail}>Dropped off at turn {s.dropOffTurn}</div>
                     )}

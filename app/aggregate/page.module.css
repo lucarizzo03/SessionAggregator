@@ -138,6 +138,19 @@ a.row:hover {
   display: flex;
 }
 
+/* Per-session outcome text shown under a session row when filtered by
+   guardrail — the direct answer to "which sessions hit this guardrail and
+   what happened," not just a bare ID list. */
+.outcomeViolated {
+  color: var(--error);
+  font-weight: 500;
+}
+
+.outcomeHeld {
+  color: var(--success);
+  font-weight: 500;
+}
+
 /* Stacked, not single-color: the completed portion and declined portion
    are visually distinct (success vs. warning) so "half-done because
    people declined" and "half-done because it just didn't happen" don't
