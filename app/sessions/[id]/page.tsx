@@ -36,16 +36,6 @@ export default async function SessionDetailPage({
           <span className={styles.metaValue}>{conversation.status ?? "—"}</span>
         </div>
         <div className={styles.metaItem}>
-          <span className={styles.metaLabel}>Duration</span>
-          <span className={`${styles.metaValue} ${styles.mono}`}>
-            {conversation.duration != null ? `${conversation.duration}s` : "—"}
-          </span>
-        </div>
-        <div className={styles.metaItem}>
-          <span className={styles.metaLabel}>Events received</span>
-          <span className={styles.metaValue}>{events.length}</span>
-        </div>
-        <div className={styles.metaItem}>
           <span className={styles.metaLabel}>Last synced</span>
           <span className={`${styles.metaValue} ${styles.mono}`}>
             {new Date(conversation.fetched_at).toISOString()}

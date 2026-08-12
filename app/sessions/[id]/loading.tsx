@@ -23,7 +23,7 @@ export default function Loading() {
         <Bar width="280px" />
       </div>
       <div className={styles.meta}>
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className={styles.metaItem}>
             <Bar width="80px" />
           </div>

@@ -23,7 +23,7 @@
 
 .meta {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1px;
   margin-bottom: var(--space-xl);
   background: var(--border);
@@ -101,12 +101,6 @@
 
 .transcriptSection h2 {
   margin-bottom: var(--space-md);
-}
-
-@media (max-width: 760px) {
-  .meta {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 .turn {
