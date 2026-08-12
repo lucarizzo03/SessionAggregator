@@ -67,25 +67,3 @@
   border-left-color: var(--accent);
 }
 
-.linkDisabled {
-  composes: link;
-  cursor: default;
-  color: var(--border);
-}
-
-.linkDisabled:hover {
-  background: transparent;
-  color: var(--border);
-}
-
-.soon {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  padding: 1px 6px;
-}

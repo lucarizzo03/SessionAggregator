@@ -11,6 +11,7 @@ import styles from "./Sidebar.module.css";
 export function Sidebar() {
   const pathname = usePathname();
   const sessionsActive = pathname === "/" || pathname.startsWith("/sessions");
+  const aggregateActive = pathname.startsWith("/aggregate");
 
   return (
     <aside className={styles.sidebar}>
@@ -22,13 +23,9 @@ export function Sidebar() {
         <Link href="/" className={sessionsActive ? styles.linkActive : styles.link}>
           Sessions
         </Link>
-        {/* Aggregate ships in Phase 2 — kept as a non-interactive nav item
-            so the sidebar reflects the intended product shape rather than
-            omitting a route that's already spec'd. */}
-        <span className={styles.linkDisabled}>
+        <Link href="/aggregate" className={aggregateActive ? styles.linkActive : styles.link}>
           Aggregate
-          <span className={styles.soon}>Soon</span>
-        </span>
+        </Link>
       </nav>
     </aside>
   );
