@@ -1,48 +1,38 @@
-# Tavus Session Aggregator
+# Session Aggregator
 
-> Third-party tool built for use with [Tavus](https://www.tavus.io/)
-> conversational-AI sessions. Not built, maintained, or endorsed by Tavus.
+> Third-party tool for Tavus conversational-AI sessions. Not built,
+> maintained, or endorsed by Tavus.
 
-Captures Tavus conversational-AI session data, then scores it against what
-the persona was actually supposed to accomplish.
+Pulls conversation data from Tavus, scores each session against what its
+persona was supposed to accomplish, and shows the results in one place —
+a sessions list, a per-session detail view, and an aggregate view.
 
-Two ways data comes in — live webhook events (push) and post-call
-conversation objects (pull) — and one LLM pass that turns each session's
-transcript into a score against its persona's objectives and guardrails.
-Everything lands in one place: a sessions list, a per-session detail view,
-and an aggregate view across every scored session.
+## How it works
 
-## What this does
-
-- **Sync** (`/api/sync`) pulls ended conversations from the Tavus API —
-  transcript, status, end-of-call perception analysis, which persona ran
-  the call.
-- **Webhook** (`/api/webhook`) receives live events during a call, if
-  `callback_url` was set to this app's deployed URL when the conversation
-  was created. See "Deploying on Vercel" below for exactly which events
-  this covers.
-- **Extract** (`/api/extract`) runs one Claude pass per session, scoring
-  the transcript against its persona's objectives and guardrails —
-  **LLM-judged, not ground truth.** See below.
-- **`/aggregate`** surfaces the results: objective completion sorted
-  worst-first, guardrail checks broken out as held/violated/never tested,
-  turn latency, and a sessions list you can filter by clicking any
-  objective or guardrail.
+- **Sync** — pulls ended conversations: transcript, status, end-of-call
+  analysis.
+- **Webhook** — receives live call events, if this app's deployed URL was
+  set as the callback target when the conversation was created.
+- **Extract** — one Claude pass per session, scoring the transcript
+  against its persona's objectives and guardrails. **LLM-judged, not
+  ground truth** — see below.
+- **Aggregate** — objective completion (worst-first), guardrail checks
+  (held / violated / never tested), turn latency, and a sessions list
+  filterable by clicking any objective or guardrail.
 
 ## Stack
 
-Next.js (App Router) + API routes + Neon Postgres (`@neondatabase/serverless`)
-+ plain CSS modules, deployed as a single Vercel project. No ORM, no
-component library, no charting library — plain SQL migrations and CSS.
+Next.js (App Router) + Neon Postgres + plain CSS. No ORM, no component
+library, no charting library.
 
-## Local setup
+## Setup
 
 ```bash
 npm install
 cp .env.example .env.local     # fill in DATABASE_URL, TAVUS_API_KEY, ANTHROPIC_API_KEY
-npm run migrate                # creates all tables
-npm run backfill-personas      # pulls persona objectives/guardrails from Tavus
-npm run seed                   # optional: inserts fake sessions to preview the UI
+npm run migrate
+npm run backfill-personas      # pulls persona objectives/guardrails
+npm run seed                   # optional, UI preview only — no persona, won't work with Extract
 npm run dev
 ```
 
@@ -51,102 +41,43 @@ npm run dev
 | Route | What it does |
 |---|---|
 | `GET /` | Sessions list |
-| `GET /sessions/[id]` | Transcript, end-of-call perception analysis, raw payload/event inspection |
-| `GET /aggregate` | Objective completion, guardrail held/violated checks, turn latency, filterable sessions list |
-| `POST /api/sync` | Pull ended conversations from Tavus |
-| `POST /api/webhook` | Receive live callback events (Tavus → this app) |
-| `POST /api/extract` | Score conversations without an extraction yet; `?force=true` to re-run all |
-| `GET /api/conversations`, `GET /api/conversations/[id]` | REST surface backing the pages above |
-| `GET /api/metrics` | REST surface backing `/aggregate` |
+| `GET /sessions/[id]` | Transcript, end-of-call perception analysis, raw payload |
+| `GET /aggregate` | Objective/guardrail results, turn latency, filterable sessions list |
+| `POST /api/sync` | Pull ended conversations |
+| `POST /api/webhook` | Receive live callback events |
+| `POST /api/extract` | Score unscored conversations (`?force=true` re-runs all) |
+| `GET /api/conversations`, `/api/conversations/[id]`, `/api/metrics` | REST surface behind the pages above |
 
-## Deploying on Vercel
+## Deploying (Vercel)
 
-1. **Import the repo.** Root Directory should stay at its default (`.`) —
-   this is a single Next.js project at the repo root, not a monorepo.
-2. **Connect Neon.** In the Vercel dashboard: Project → Storage → Connect
-   Database → Neon (or Settings → Integrations if you already have the Neon
-   integration installed elsewhere and just need to attach it to this
-   project). This injects `DATABASE_URL` automatically — don't set it
-   manually as a plain env var, it'll create ambiguity with what the
-   integration manages.
-   - **Check both Preview and Production** in the environment picker, or
-     production requests will throw `DATABASE_URL is not set` after
-     building fine.
-   - If the dialog offers a "Custom Environment Variable Prefix" field,
-     **leave it blank.** A prefix (e.g. "STORAGE") makes Vercel inject the
-     connection string as `STORAGE_URL` or similar instead of plain
-     `DATABASE_URL`, which is the exact name `lib/db.ts` reads — a
-     mismatch here silently breaks every page and API route at runtime
-     while the build itself still succeeds.
-   - Connecting the integration to an existing project doesn't retroactively
-     fix an already-built deployment — redeploy after connecting it.
-3. **Run the migration against the production database.** Vercel doesn't
-   run this for you. Locally, temporarily point `DATABASE_URL` in
-   `.env.local` at the same connection string Vercel is using (copy it from
-   Settings → Environment Variables), then run `npm run migrate`. Do this
-   once per environment/branch — Neon's Vercel integration can create a
-   separate database branch per Preview deployment, which needs its own
-   migration run too if you're relying on Preview environments.
-4. **Set `TAVUS_API_KEY` and `ANTHROPIC_API_KEY`.** Neither is provided by
-   any integration — add both manually under Settings → Environment
-   Variables, for whichever environments will call `/api/sync` and
-   `/api/extract` (typically Production).
-5. **Find the deployed webhook URL** once the first deployment is live:
-   it's `https://<your-vercel-domain>/api/webhook`. Paste that into
-   `callback_url` when creating a Tavus conversation. It has to be live
-   *before* the call starts — the events Tavus actually POSTs there
-   (`system.pal_joined`, `system.shutdown`, `application.transcription_ready`,
-   `application.recording_ready`, `application.recording_copy_failed`,
-   `application.perception_analysis`, `application.post_call_action_executed`)
-   are pushed once, live, and can't be re-fetched afterward.
+1. Import the repo — root directory stays default, this isn't a monorepo.
+2. Connect Neon (Project → Storage → Connect Database). Check **both**
+   Preview and Production, and leave "Custom Environment Variable Prefix"
+   **blank** — a prefix silently renames `DATABASE_URL`, which breaks the
+   app at runtime with no build error.
+3. Run `npm run migrate` against the production `DATABASE_URL` yourself —
+   Vercel doesn't run migrations for you.
+4. Set `TAVUS_API_KEY` and `ANTHROPIC_API_KEY` manually — neither comes
+   from an integration.
+5. Once deployed, set `callback_url` to `https://<your-domain>/api/webhook`
+   when creating a conversation, live *before* the call starts. Covers 7
+   events: `system.pal_joined`, `system.shutdown`,
+   `application.transcription_ready`, `application.recording_ready`,
+   `application.recording_copy_failed`, `application.perception_analysis`,
+   `application.post_call_action_executed`.
 
-## Scripts
+## Scoring is LLM-judged, not ground truth
 
-- `npm run migrate` — runs every `.sql` file in `migrations/` in order.
-  Plain SQL, no ORM; safe to re-run (`create table if not exists`).
-- `npm run backfill-personas` — pulls each distinct persona referenced by
-  synced conversations from the real Tavus API, storing its objectives and
-  guardrails. Re-runnable; run this before `/api/extract` the first time,
-  since extraction scores against whatever's in the `personas` table.
-- `npm run seed` — inserts fake conversations + events, so the sessions
-  list and detail view have something to show before any real calls have
-  run. Predates personas/extraction: seeded conversations have no
-  `persona_id` and won't work with Extract or `/aggregate` — seed only
-  covers Phase 1 (sessions list/detail), not Phase 2.
+Every objective/guardrail result under Extract and `/aggregate` is
+Claude's read on the transcript — it will sometimes be wrong. Two real
+bugs already found this way: a declined answer scored as "completed"
+(fixed with a three-way status), and a guardrail that was tested and held
+looked identical to one that was never tested at all (fixed by tracking
+outcomes, not just violations). Spot-check numbers against the actual
+transcript, linked from every session row.
 
-## Objective/guardrail scoring is LLM-judged, not ground truth
+## Open question
 
-Everything under **Extract** and `/aggregate` — whether an objective was
-completed, declined, or missed; whether a guardrail was tested, held, or
-violated — is Claude's read on the transcript, not a verified fact. It
-will sometimes be wrong.
-
-Two real, not hypothetical, findings so far:
-
-- An early version of the extraction prompt scored a patient's explicit
-  "I don't want to answer" as a *completed* objective, because the topic
-  had been raised and closed off even though no information was actually
-  gathered. Fixed by making objective status three-way — completed /
-  declined / not_completed.
-- Guardrail tracking originally only recorded violations, so a guardrail
-  that was directly pressure-tested and successfully held (a patient
-  asking "could you give me a diagnosis?" and the persona correctly
-  refusing) looked identical to a guardrail that was never relevant to the
-  call at all — both showed up as nothing. Fixed by recording every
-  guardrail check with an outcome (held/violated), not just violations.
-
-Both fixes make the scoring more accurate, not ground truth. Treat every
-number on `/aggregate` as a model's interpretation worth spot-checking
-against the actual transcript (linked from every session row), not as
-measured fact.
-
-## What's confirmed vs. still a guess
-
-Real payloads (synced from live Tavus calls) and Tavus's own docs confirmed
-most of the field-name guesses in `lib/tavus.ts`. One thing remains open:
-whether the 7 events Tavus actually POSTs to `callback_url` (listed above)
-match the shapes documented in `lib/tavus.ts`, since that's only been
-tested by pulling already-ended conversations locally, not by receiving a
-real live webhook against a deployed URL yet. Once real webhook rows land
-in `events`, check them against the comments in `lib/tavus.ts` and correct
-anything that doesn't match.
+No live call has ever had `callback_url` set, so the webhook path is
+built and correct but untested against a real payload. Once one lands in
+`events`, check it against `lib/tavus.ts`.
