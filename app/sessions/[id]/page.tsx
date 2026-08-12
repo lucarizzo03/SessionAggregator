@@ -92,21 +92,36 @@ export default async function SessionDetailPage({
           {turns.length === 0 && <p className={styles.empty}>No per-utterance analysis available.</p>}
           {/* Only ever populated for user turns on a Raven-1 persona, and
               only if the webhook was live (deployed, callback_url pointed
-              here) during this specific call — see lib/tavus.ts. */}
-          {turns.map((t, i) => {
-            const analysis = t.inferenceId ? utteranceAnalysis.get(t.inferenceId) : undefined;
-            return (
-              <div key={i} className={styles.turn}>
-                <div className={styles.turnMeta}>
-                  <span className={styles.mono}>{t.timestamp ?? "—"}</span>
+              here) during this specific call — see lib/tavus.ts. This data
+              has zero pull-side fallback, so when no live webhook event was
+              ever received for this conversation (utteranceAnalysis is
+              empty), say that plainly instead of rendering a dash per turn
+              — a wall of "—" reads as broken, not as "wrong kind of data
+              collection ran for this call." */}
+          {turns.length > 0 && utteranceAnalysis.size === 0 && (
+            <p className={styles.empty}>
+              No per-utterance analysis was received for this conversation. This data only
+              arrives via a live webhook event during the call itself — it has no pull-side
+              fallback, so it's only available for calls where the webhook was deployed and
+              reachable while the call was in progress.
+            </p>
+          )}
+          {turns.length > 0 &&
+            utteranceAnalysis.size > 0 &&
+            turns.map((t, i) => {
+              const analysis = t.inferenceId ? utteranceAnalysis.get(t.inferenceId) : undefined;
+              return (
+                <div key={i} className={styles.turn}>
+                  <div className={styles.turnMeta}>
+                    <span className={styles.mono}>{t.timestamp ?? "—"}</span>
+                  </div>
+                  <p className={styles.label}>Visual</p>
+                  <pre className={styles.interpretive}>{analysis?.visual ?? "—"}</pre>
+                  <p className={styles.label}>Audio</p>
+                  <pre className={styles.interpretive}>{analysis?.audio ?? "—"}</pre>
                 </div>
-                <p className={styles.label}>Visual</p>
-                <pre className={styles.interpretive}>{analysis?.visual ?? "—"}</pre>
-                <p className={styles.label}>Audio</p>
-                <pre className={styles.interpretive}>{analysis?.audio ?? "—"}</pre>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
 
