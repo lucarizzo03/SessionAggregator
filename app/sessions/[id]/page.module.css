@@ -95,24 +95,18 @@
   line-height: 1.6;
 }
 
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-lg);
+.transcriptSection {
+  margin-bottom: var(--space-xl);
+}
+
+.transcriptSection h2 {
+  margin-bottom: var(--space-md);
 }
 
 @media (max-width: 760px) {
-  .columns {
-    grid-template-columns: 1fr;
-  }
-
   .meta {
     grid-template-columns: repeat(2, 1fr);
   }
-}
-
-.column h2 {
-  margin-bottom: var(--space-md);
 }
 
 .turn {
@@ -144,18 +138,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
   padding: 1px 8px;
-}
-
-.label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin: var(--space-sm) 0 var(--space-xs);
-}
-
-.label:first-of-type {
-  margin-top: 0;
 }
 
 .empty {

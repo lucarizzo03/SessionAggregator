@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getConversationWithEvents } from "@/lib/queries";
-import { normalizeTranscript, extractUtteranceAnalysis } from "@/lib/tavus";
+import { normalizeTranscript } from "@/lib/tavus";
 import styles from "./page.module.css";
 
 // See app/page.tsx for why this is needed: without it, Next would try to
@@ -21,17 +21,7 @@ export default async function SessionDetailPage({
   if (!result) notFound();
   const { conversation, events } = result;
 
-  // Transcript turns come from the pull side (conversation.transcript).
-  // Per-utterance visual/audio analysis would come from conversation.utterance
-  // events, but Tavus delivers those over Daily's WebRTC data channel
-  // (app-message), not to callback_url — so /api/webhook can never actually
-  // receive them, and extractUtteranceAnalysis will always return an empty
-  // map under this app's current architecture. See the comment above
-  // extractUtteranceAnalysis in lib/tavus.ts for the full finding; kept here
-  // (rather than removed) to document it and leave the door open if this app
-  // ever gains a way to join the Daily room directly.
   const turns = normalizeTranscript(conversation.transcript);
-  const utteranceAnalysis = extractUtteranceAnalysis(events);
 
   return (
     <div className={styles.container}>
@@ -75,54 +65,19 @@ export default async function SessionDetailPage({
         </pre>
       </section>
 
-      <div className={styles.columns}>
-        <div className={styles.column}>
-          <h2>Transcript</h2>
-          {turns.length === 0 && <p className={styles.empty}>No transcript available.</p>}
-          {turns.map((t, i) => (
-            <div key={i} className={styles.turn}>
-              <div className={styles.turnMeta}>
-                <span className={styles.mono}>{t.timestamp ?? "—"}</span>
-                <span className={styles.role}>{t.role ?? "unknown"}</span>
-              </div>
-              <pre className={styles.prose}>{t.text ?? "—"}</pre>
+      <section className={styles.transcriptSection}>
+        <h2>Transcript</h2>
+        {turns.length === 0 && <p className={styles.empty}>No transcript available.</p>}
+        {turns.map((t, i) => (
+          <div key={i} className={styles.turn}>
+            <div className={styles.turnMeta}>
+              <span className={styles.mono}>{t.timestamp ?? "—"}</span>
+              <span className={styles.role}>{t.role ?? "unknown"}</span>
             </div>
-          ))}
-        </div>
-
-        <div className={styles.column}>
-          <h2>Per-utterance analysis</h2>
-          {turns.length === 0 && <p className={styles.empty}>No per-utterance analysis available.</p>}
-          {/* utteranceAnalysis is always empty under this app's current
-              architecture — see lib/tavus.ts. Saying that plainly here
-              instead of rendering a dash per turn, since a wall of "—"
-              reads as broken rather than as "this integration can't reach
-              this data." */}
-          {turns.length > 0 && utteranceAnalysis.size === 0 && (
-            <p className={styles.empty}>
-              Per-utterance analysis is delivered over Tavus's Daily WebRTC data channel during
-              the call, not to a callback_url webhook. It isn't available through the
-              callback_url integration this tool uses.
-            </p>
-          )}
-          {turns.length > 0 &&
-            utteranceAnalysis.size > 0 &&
-            turns.map((t, i) => {
-              const analysis = t.inferenceId ? utteranceAnalysis.get(t.inferenceId) : undefined;
-              return (
-                <div key={i} className={styles.turn}>
-                  <div className={styles.turnMeta}>
-                    <span className={styles.mono}>{t.timestamp ?? "—"}</span>
-                  </div>
-                  <p className={styles.label}>Visual</p>
-                  <pre className={styles.interpretive}>{analysis?.visual ?? "—"}</pre>
-                  <p className={styles.label}>Audio</p>
-                  <pre className={styles.interpretive}>{analysis?.audio ?? "—"}</pre>
-                </div>
-              );
-            })}
-        </div>
-      </div>
+            <pre className={styles.prose}>{t.text ?? "—"}</pre>
+          </div>
+        ))}
+      </section>
 
       {/* These two panels exist for schema discovery, not as a planned
           feature: since the transcript/perception field names above are

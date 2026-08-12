@@ -29,19 +29,11 @@ export default function Loading() {
           </div>
         ))}
       </div>
-      <div className={styles.columns}>
-        <div className={styles.column}>
-          <Bar width="120px" />
-          <Bar width="100%" />
-          <Bar width="90%" />
-          <Bar width="70%" />
-        </div>
-        <div className={styles.column}>
-          <Bar width="140px" />
-          <Bar width="100%" />
-          <Bar width="90%" />
-          <Bar width="70%" />
-        </div>
+      <div className={styles.transcriptSection}>
+        <Bar width="120px" />
+        <Bar width="100%" />
+        <Bar width="90%" />
+        <Bar width="70%" />
       </div>
     </div>
   );

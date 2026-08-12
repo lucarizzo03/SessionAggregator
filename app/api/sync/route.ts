@@ -8,7 +8,8 @@ const TAVUS_BASE_URL = "https://tavusapi.com";
 // it's operator-triggered (the Sync button), idempotent (upsert on
 // conversation_id), and re-runnable if it fails partway — nothing is lost by
 // retrying since the source of truth (Tavus) can still be queried after the
-// fact, which is exactly the property utterance events don't have.
+// fact, which is exactly the property a live-pushed webhook event doesn't
+// have.
 export async function POST() {
   const apiKey = process.env.TAVUS_API_KEY;
   if (!apiKey) {
