@@ -8,7 +8,9 @@ export default function Loading() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Sessions</h1>
+        <div className={styles.headerText}>
+          <h1>Sessions</h1>
+        </div>
       </div>
       <div className={styles.tableWrap}>
         <table>

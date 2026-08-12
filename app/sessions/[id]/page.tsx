@@ -64,8 +64,10 @@ export default async function SessionDetailPage({
         <h2>End-of-call perception analysis</h2>
         {/* Rendered as preformatted text, not markdown-rendered: Tavus
             returns this as free-text prose and this version deliberately
-            doesn't parse or render it beyond preserving line breaks. */}
-        <pre className={styles.prose}>
+            doesn't parse or render it beyond preserving line breaks.
+            Fraunces + amber border (see page.module.css .interpretive) mark
+            this as the model's read, not measured data. */}
+        <pre className={styles.interpretive}>
           {conversation.perception_analysis ?? "Not available for this conversation."}
         </pre>
       </section>
@@ -78,7 +80,7 @@ export default async function SessionDetailPage({
             <div key={i} className={styles.turn}>
               <div className={styles.turnMeta}>
                 <span className={styles.mono}>{t.timestamp ?? "—"}</span>
-                <strong>{t.role ?? "unknown"}</strong>
+                <span className={styles.role}>{t.role ?? "unknown"}</span>
               </div>
               <pre className={styles.prose}>{t.text ?? "—"}</pre>
             </div>
@@ -99,9 +101,9 @@ export default async function SessionDetailPage({
                   <span className={styles.mono}>{t.timestamp ?? "—"}</span>
                 </div>
                 <p className={styles.label}>Visual</p>
-                <pre className={styles.prose}>{analysis?.visual ?? "—"}</pre>
+                <pre className={styles.interpretive}>{analysis?.visual ?? "—"}</pre>
                 <p className={styles.label}>Audio</p>
-                <pre className={styles.prose}>{analysis?.audio ?? "—"}</pre>
+                <pre className={styles.interpretive}>{analysis?.audio ?? "—"}</pre>
               </div>
             );
           })}

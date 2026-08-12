@@ -1,16 +1,18 @@
 .wrap {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .button {
   background: var(--accent);
   color: var(--accent-fg);
   border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-weight: 500;
   cursor: pointer;
+  transition: background var(--duration-short) var(--ease-move);
 }
 
 .button:disabled {
@@ -19,15 +21,15 @@
 }
 
 .button:hover:not(:disabled) {
-  filter: brightness(1.08);
+  background: var(--accent-hover);
 }
 
 .message {
-  font-size: 13px;
+  font-size: var(--text-small);
   color: var(--muted);
 }
 
 .error {
-  font-size: 13px;
+  font-size: var(--text-small);
   color: var(--error);
 }

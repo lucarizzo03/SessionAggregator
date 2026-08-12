@@ -1,36 +1,43 @@
 .container {
-  max-width: 1100px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 40px 24px 80px;
+  padding: var(--space-xl) var(--space-xl) var(--space-3xl);
 }
 
 .back {
-  font-size: 13px;
+  font-size: var(--text-small);
   color: var(--muted);
 }
 
+.back:hover {
+  color: var(--ink);
+}
+
 .title {
-  margin-top: 8px;
-  margin-bottom: 24px;
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-lg);
   font-family: var(--font-mono);
   font-size: 20px;
   word-break: break-all;
 }
 
 .meta {
-  display: flex;
-  gap: 32px;
-  margin-bottom: 32px;
-  padding: 16px 20px;
-  background: var(--surface);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-bottom: var(--space-xl);
+  background: var(--border);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .metaItem {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--surface);
 }
 
 .metaLabel {
@@ -41,31 +48,49 @@
 }
 
 .metaValue {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .mono {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .perception {
-  margin-bottom: 32px;
+  margin-bottom: var(--space-xl);
 }
 
 .perception h2 {
-  font-size: 15px;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-sm);
 }
 
-.prose {
-  font-family: var(--font-sans);
+/* Interpretive content — the model's read, not measured data. Fraunces +
+   the amber left border are the visual marker for that distinction, see
+   DESIGN.md "Typography — Interpretive prose (risk)". */
+.interpretive {
+  font-family: var(--font-serif);
+  font-size: var(--text-prose);
+  line-height: 1.7;
   white-space: pre-wrap;
   word-wrap: break-word;
   margin: 0;
-  padding: 16px 20px;
+  padding: var(--space-md) var(--space-lg);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.prose {
+  font-family: var(--font-body);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -73,23 +98,26 @@
 .columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: var(--space-lg);
 }
 
 @media (max-width: 760px) {
   .columns {
     grid-template-columns: 1fr;
   }
+
+  .meta {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .column h2 {
-  font-size: 15px;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-md);
 }
 
 .turn {
-  margin-bottom: 16px;
-  padding-bottom: 16px;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
   border-bottom: 1px solid var(--border);
 }
 
@@ -100,15 +128,22 @@
 .turnMeta {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
   font-size: 12px;
   color: var(--muted);
 }
 
-.turnMeta strong {
-  color: var(--fg);
-  text-transform: capitalize;
+.role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 1px 8px;
 }
 
 .label {
@@ -116,7 +151,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
-  margin: 10px 0 4px;
+  margin: var(--space-sm) 0 var(--space-xs);
 }
 
 .label:first-of-type {
@@ -129,14 +164,14 @@
 }
 
 .rawSection {
-  margin-top: 40px;
+  margin-top: var(--space-2xl);
 }
 
 .rawSection summary {
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--text-small);
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-md);
 }
 
 .rawSection pre {
@@ -147,7 +182,7 @@
 
 .eventsTableWrap {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--surface);
 }

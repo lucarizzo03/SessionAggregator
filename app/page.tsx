@@ -20,7 +20,10 @@ export default async function SessionsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Sessions</h1>
+        <div className={styles.headerText}>
+          <h1>Sessions</h1>
+          <p>Live webhook events and pulled transcripts from Tavus.</p>
+        </div>
         <SyncButton />
       </div>
       <div className={styles.tableWrap}>

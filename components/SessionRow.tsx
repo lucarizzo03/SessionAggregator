@@ -15,12 +15,24 @@ export function SessionRow({ conversation }: { conversation: ConversationListRow
   return (
     <tr className={styles.row} onClick={() => router.push(`/sessions/${conversation.conversation_id}`)}>
       <td className={styles.mono}>{conversation.conversation_id}</td>
-      <td>{conversation.status ?? <span className={styles.muted}>—</span>}</td>
+      <td>
+        {conversation.status ? (
+          <span className={styles.badge}>{conversation.status}</span>
+        ) : (
+          <span className={styles.muted}>—</span>
+        )}
+      </td>
       <td className={styles.mono}>
         {conversation.duration != null ? `${conversation.duration}s` : <span className={styles.muted}>—</span>}
       </td>
-      <td>{conversation.event_count}</td>
-      <td>{conversation.has_perception ? "Yes" : "No"}</td>
+      <td className={styles.mono}>{conversation.event_count}</td>
+      <td>
+        {conversation.has_perception ? (
+          <span className={styles.perceptionYes}>Yes</span>
+        ) : (
+          <span className={styles.muted}>No</span>
+        )}
+      </td>
     </tr>
   );
 }
